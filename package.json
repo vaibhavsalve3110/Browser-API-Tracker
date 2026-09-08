@@ -1,0 +1,16 @@
+{
+  "name": "browser-api-tracker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Opens a browser, records every user interaction with a screenshot, and captures the API (XHR/fetch) calls tied to each interaction into an HTML and Word report.",
+  "main": "track.js",
+  "scripts": {
+    "start": "node track.js",
+    "install-browser": "playwright install chromium"
+  },
+  "dependencies": {
+    "docx": "^9.1.1",
+    "exceljs": "^4.4.0",
+    "playwright": "^1.47.2"
+  }
+}
