@@ -1,6 +1,11 @@
-// Runs INSIDE the browser page (via page.addInitScript). Re-injected automatically
-// on every navigation. Reports user interactions back to Node via window.__trackEvent.
-function injectedTracker() {
+"""JavaScript that runs INSIDE every page (via context.add_init_script).
+
+It is re-injected automatically on each navigation and reports user interactions back to
+Python through the exposed binding `window.__trackEvent`.
+"""
+
+INJECTED_TRACKER_JS = r"""
+(function injectedTracker() {
   if (window.__apiTrackerAttached) return;
   window.__apiTrackerAttached = true;
 
@@ -45,9 +50,8 @@ function injectedTracker() {
       el.type !== 'checkbox' && el.type !== 'radio';
   }
 
-  // For text/typed fields we only want a screenshot of the FIRST keystroke and the LAST
-  // keystroke of a typing session, not one per character. `input` fires on every keystroke,
-  // so a session is tracked per-element and only its first and last (on blur) are reported.
+  // For text/typed fields only the FIRST keystroke and the LAST (on blur) of a typing
+  // session are reported, not one event per character.
   const typingSessions = new WeakSet();
 
   document.addEventListener('click', function (e) {
@@ -71,8 +75,7 @@ function injectedTracker() {
     }
   }, true);
 
-  // Checkboxes, radios and selects aren't "typed" — a single change event is already the
-  // whole interaction, so they keep the original one-shot capture.
+  // Checkboxes, radios and selects aren't "typed": one change event is the whole interaction.
   document.addEventListener('change', function (e) {
     const el = e.target;
     if (el && (el.tagName === 'SELECT' || (el.tagName === 'INPUT' && (el.type === 'checkbox' || el.type === 'radio')))) {
@@ -82,8 +85,8 @@ function injectedTracker() {
 
   document.addEventListener('submit', function (e) {
     const el = e.target;
-    // A submit usually follows a typing session that hasn't blurred yet (Enter key) — flush
-    // its "last" screenshot first so the typed value is still captured.
+    // A submit usually follows a typing session that hasn't blurred yet (Enter key): flush
+    // its "last" event first so the typed value is still captured.
     if (document.activeElement && isTypedField(document.activeElement) && typingSessions.has(document.activeElement)) {
       typingSessions.delete(document.activeElement);
       send('input_end', document.activeElement, { value: fieldValue(document.activeElement) });
@@ -94,6 +97,5 @@ function injectedTracker() {
   window.addEventListener('load', function () {
     send('page_load', document.body);
   });
-}
-
-module.exports = { injectedTracker };
+})();
+"""
